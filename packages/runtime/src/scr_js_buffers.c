@@ -556,7 +556,9 @@ static ScrDyn *scr_js_buffer_build(ScrDyn *length_value, ScrDyn *options, bool s
   ScrJsBufferOwner *state = scr_js_buffer_owner_state(owner, true);
   state->capacity = capacity;
   state->resizable = resizable;
-  state->growable = shared;
+  /* `.growable` is true only for a SharedArrayBuffer built with
+   * maxByteLength: `new SharedArrayBuffer(4)` and `(4, {})` answer false. */
+  state->growable = shared && resizable;
   ScrDyn *result = scr_array_buffer_from_bytes(owner);
   scr_bytes_release(owner);
   return result;
