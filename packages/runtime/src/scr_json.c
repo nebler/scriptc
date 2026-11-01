@@ -2771,7 +2771,14 @@ ScrDyn *scr_dyn_get_prototype(ScrDyn *object) {
   if (object->kind == SCR_DYN_OBJ && scr_dyn_error_view_on_error_prototype(object)) return scr_dyn_error_prototype();
   if (scr_dyn_class_reflection_fence(object)) return NULL;
   if (object->kind == SCR_DYN_TYPED_REF && strncmp(object->v.typed_ref.type_key, "object:", 7)) {
-    ScrDyn *view = scr_dyn_typed_ref_materialize(object);
+    /* Record refreshes preserve the checked view's prototype. Reading it
+     * needs no fresh field snapshot once that view exists. */
+    bool cached_record = object->v.typed_ref.type_key_len >= 7 &&
+        memcmp(object->v.typed_ref.type_key, "record:", 7) == 0 &&
+        object->v.typed_ref.materialized;
+    ScrDyn *view = cached_record
+        ? scr_dyn_retain(object->v.typed_ref.materialized)
+        : scr_dyn_typed_ref_materialize(object);
     if (!view) return NULL;
     ScrDyn *result = scr_dyn_get_prototype(view);
     scr_dyn_release(view);
