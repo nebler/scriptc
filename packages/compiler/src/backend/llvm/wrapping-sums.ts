@@ -104,6 +104,29 @@ const ELEMENT_RANGES: Partial<Record<string, IntegerRange>> = {
   i32: { min: -2147483648, max: 2147483647 },
 };
 
+/** A range used only for wrapping arithmetic: zero may have either sign.
+ * Unlike integerOrNaNRange, this is not a proof for ordinary Number or
+ * index consumers. Every intermediate must still be exact, and NaN must
+ * still propagate through the entire arithmetic expression. */
+function wrappingRange(host: LlvmEmitterContext, e: IrExpr): IntegerRange | null {
+  const range = integerOrNaNRange(host, e);
+  if (range) return range;
+  if (e.kind !== "bin" || (e.op !== "+" && e.op !== "-" && e.op !== "*")) return null;
+  const left = wrappingRange(host, e.left);
+  const right = left && wrappingRange(host, e.right);
+  if (!right) return null;
+  if (e.op !== "*") return integerArithmeticRange(e.op, left!, right);
+  if (!exactProduct(left!, right)) return null;
+  const products = [
+    left!.min * right.min,
+    left!.min * right.max,
+    left!.max * right.min,
+    left!.max * right.max,
+  ];
+  // Canonicalize the interval endpoints, not the expression's Number value.
+  return { min: Math.min(...products) + 0, max: Math.max(...products) + 0 };
+}
+
 /** The low 32 bits of an operand (0 for NaN), and an i1 that is false when
  * it is NaN (null when it never is). */
 function wrappingOperand(
@@ -161,8 +184,8 @@ export function emitWrappingSum(
   ri: LlInteger | null,
 ): { uint32: string; ordered: string } | undefined {
   if ((e.op !== "+" && e.op !== "-" && e.op !== "*") || !host.wrappingSums.has(e)) return undefined;
-  const leftRange = li ? li.range : integerOrNaNRange(host, e.left);
-  const rightRange = leftRange && (ri ? ri.range : integerOrNaNRange(host, e.right));
+  const leftRange = li ? li.range : wrappingRange(host, e.left);
+  const rightRange = leftRange && (ri ? ri.range : wrappingRange(host, e.right));
   if (!rightRange) return undefined;
   if (
     e.op === "*"
