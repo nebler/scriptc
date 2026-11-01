@@ -1,0 +1,22 @@
+{
+  "profile_format": 1,
+  "name": "closed-records-probe",
+  "entry": "probe.ts",
+  "emission": "llvm",
+  "abi": {
+    "prefix": "cr_",
+    "init_symbol": "cr_init",
+    "sink_register_symbol": "cr_sink",
+    "collect_symbol": "cr_collect",
+    "localize_runtime": true,
+    "instance_per_thread": false
+  },
+  "exports": [
+    {
+      "export": "run",
+      "symbol": "cr_run",
+      "params": [],
+      "returns": "string"
+    }
+  ]
+}
