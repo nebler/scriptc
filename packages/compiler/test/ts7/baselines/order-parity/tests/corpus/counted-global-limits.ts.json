@@ -1,0 +1,6 @@
+{
+ "order": [
+  "<repo>/tests/corpus/counted-global-limits.ts"
+ ],
+ "diags": []
+}

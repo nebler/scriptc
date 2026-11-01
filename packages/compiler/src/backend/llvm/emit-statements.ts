@@ -1,3 +1,4 @@
+import { countedGlobalLocals } from "./counted-global-limits.js";
 /* LlEmitter's statement emission: the statement switch, try/catch, switch, loop copies, speculative writes and string self-concatenation. */
 import { emitInlineArrayInit, inlineFieldTail } from "./inline-arrays.js";
 import { emitLoopBytesHeaders } from "./bytes-headers.js";
@@ -1032,7 +1033,7 @@ export function emitStmtBody(emitter: LlEmitter, s: IrStmt): void {
         !integerLoop && LOOPS.of(emitter).countedLoopsEnabled
           ? matchIntegerCountedForLoop(
               s,
-              emitter.numericLocals,
+              countedGlobalLocals(s, emitter.numericLocals, emitter.mod.globals ?? []),
               emitter.integerRanges,
               LOOPS.of(emitter).unaliasedArrays,
             )
@@ -1139,7 +1140,7 @@ export function emitStmtBody(emitter: LlEmitter, s: IrStmt): void {
         versionable && !countedLoop && integerLoop && LOOPS.of(emitter).countedLoopsEnabled
           ? matchIntegerCountedForLoop(
               s,
-              emitter.numericLocals,
+              countedGlobalLocals(s, emitter.numericLocals, emitter.mod.globals ?? []),
               emitter.integerRanges,
               LOOPS.of(emitter).unaliasedArrays,
             )
